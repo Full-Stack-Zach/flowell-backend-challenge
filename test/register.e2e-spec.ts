@@ -1,46 +1,53 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { Connection } from "mongoose"
 import { AppModule} from '../src/app.module';
+import { DatabaseService } from '../src/database/database.service';
+
 
 describe('POST /auth/register', () => {
   let app: INestApplication;
+  let dbConnection: Connection;
+  let httpServer: any;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  const validPayload = {
+    username: 'testman',
+    email: 'testman@test.com',
+    password: 'password'
+  }
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
+  const successMessage = {message: "User created successfully"}
 
-  afterEach(done => {
-    app.close()
-    done()
+  beforeAll(async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [AppModule]
+      }).compile();
+  
+      app = moduleRef.createNestApplication();
+      await app.init();
+      dbConnection = moduleRef.get<DatabaseService>(DatabaseService).getDbHandle();
+      httpServer = app.getHttpServer();
+    })
+
+  afterAll(async () => {
+      await app.close();
+  })
+
+  afterEach(async () => {
+      await dbConnection.collection('users').deleteMany({});
   })
 
   it('POST /auth/register returns success with unique username, password, and email', () => {
-    const validPayload = {
-      username: 'testman',
-      email: 'testman@test.com',
-      password: 'testpass'
-    }
-    const successMessage = {message: "User created successfully"}
 
-    return request(app.getHttpServer())
+    return request(httpServer)
       .post('/auth/register')
       .send(validPayload)
       .expect(201)
       .expect(successMessage)
   });
 
-  it('POST /auth/register returns error if email is already registered', () => {
-    const validPayload1 = {
-      username: 'testman',
-      email: 'testman@test.com',
-      password: 'testpass'
-    }
+  it('POST /auth/register returns error if email is already registered', async () => {
 
     const validPayload2 = {
       username: 'testman2',
@@ -48,41 +55,34 @@ describe('POST /auth/register', () => {
       password: 'testpass'
     }
 
-    const successMessage = {message: "User created successfully"}
-
-    request(app.getHttpServer())
+    await request(httpServer)
       .post('/auth/register')
-      .send(validPayload1)
+      .send(validPayload)
       .expect(201)
       .expect(successMessage)
 
     // second submission returns error because email is already registered now
-    return request(app.getHttpServer())
+    return request(httpServer)
     .post('/auth/register')
     .send(validPayload2)
     .expect(409)
   });
 
   it('POST /auth/register returns error if password is too short (must be 8 chars or longer)', () => {
-    const validPayload = {
+    const invalidPayload = {
       username: 'testman',
       email: 'testman@test.com',
       password: 'testpas'
     }
 
-    return request(app.getHttpServer())
+    return request(httpServer)
       .post('/auth/register')
-      .send(validPayload)
+      .send(invalidPayload)
       .expect(400)
   });
 
-  it('POST /auth/register returns error if username is already in use', () => {
-    const validPayload1 = {
-      username: 'testman',
-      email: 'testman1@test.com',
-      password: 'testpass'
-    }
-
+  it('POST /auth/register returns error if username is already in use', async () => {
+    
     const validPayload2 = {
       username: 'testman',
       email: 'testman2@test.com',
@@ -91,14 +91,14 @@ describe('POST /auth/register', () => {
 
     const successMessage = {message: "User created successfully"}
 
-    request(app.getHttpServer())
+    await request(httpServer)
       .post('/auth/register')
-      .send(validPayload1)
+      .send(validPayload)
       .expect(201)
       .expect(successMessage)
 
     // second submission returns error because username is already registered now
-    return request(app.getHttpServer())
+    return request(httpServer)
     .post('/auth/register')
     .send(validPayload2)
     .expect(409)

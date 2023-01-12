@@ -1,15 +1,21 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PostModule } from './post/post.module';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { FeedModule } from './feed/feed.module';
+import { DatabaseModule } from './database/database.module';
+
 
 
 @Module({
-  imports: [MongooseModule.forRoot('mongodb+srv://zholub:FlowellTe$tDB47@cluster0.3jhbugb.mongodb.net/test'), PostModule, AuthModule, UsersModule, FeedModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    DatabaseModule, PostModule, AuthModule, UsersModule, FeedModule],
   controllers: [AppController],
   providers: [AppService],
 })

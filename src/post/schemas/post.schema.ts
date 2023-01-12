@@ -8,8 +8,8 @@ export class Post {
     @Prop({ required: true })
     title: string;
 
-    @Prop()
-    text?: string;
+    @Prop({ required: true })
+    text: string;
 
     @Prop({ required: true })
     createdByUser: string;

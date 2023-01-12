@@ -16,11 +16,13 @@ export class PostService {
     }
 
     async findOne(id: string): Promise<Post> {
-        const checkForValidMongooseId = /^[a-f\d]{24}$/i
+        // This is a check to make sure the id is a valid Mongoose ObjectID. This was outside the scope of the assignment though so I 
+        // decided to remove it
+        // const checkForValidMongooseId = /^[a-f\d]{24}$/i
 
-        if (!checkForValidMongooseId.test(id)){
-            throw new BadRequestException
-        }
+        // if (!checkForValidMongooseId.test(id)){
+        //     throw new BadRequestException
+        // }
 
         try {
         
@@ -33,6 +35,10 @@ export class PostService {
 
 
     async create(createPostDto: CreatePostDto, user: UserAuthPayload): Promise<Post> {
+
+        if (!createPostDto || !createPostDto.text || !createPostDto.title){
+            throw new BadRequestException
+        }
 
         try {
             return await new this.model({
@@ -55,7 +61,6 @@ export class PostService {
         }
 
         if (post.createdByUser !== user.userId){
-            console.log('po')
             throw new UnauthorizedException
         }
 
